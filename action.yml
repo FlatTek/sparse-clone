@@ -1,0 +1,64 @@
+name: "Sparse Clone Repository"
+description: "Sparse clone a repository"
+inputs:
+  repo_owner:
+    description: "Owner of the repository to clone [example: FlatTek]"
+    required: true
+  repo_name:
+    description: "Name of the repository to clone [example: actions]"
+    required: true
+  repo_pat:
+    description: "Personal Access Token (PAT) for the repository to clone [example: XX{{ secrets.Cloning_PAT }}]"
+    required: true
+  repo_source_dir:
+    description: "Source Directory Path to sparse clone [example: sparse-clone-repo]"
+    required: true
+  repo_local_dir:
+    description: "Local target directory into which the repository will be cloned within the workspace [example: FlatTek]"
+    required: true
+    
+
+outputs:
+  completion_time:
+    description: "Reports the date and time the script completed"
+    value: ${{ steps.tree-display.outputs.completion_time }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install_Node
+      id: install
+      shell: bash
+
+      env:
+        REPO_OWNER: ${{ inputs.repo_owner }}
+        REPO_NAME: ${{ inputs.repo_name }}
+        REPO_PAT: ${{ inputs.repo_pat }}
+        REPO_SOURCE_DIR: ${{ inputs.repo_source_dir }}
+        REPO_LOCAL_DIR: ${{ github.workspace }}/${{ inputs.repo_local_dir }}
+
+      run: |
+        #-- Sparse clone a repository ----------------------------
+        echo "Sparse cloning a repository"
+
+        # Echo variables received from the user
+        echo "REPO_OWNER = $REPO_OWNER"
+        echo "REPO_NAME = $REPO_NAME"
+        echo "REPO_PAT = ***"
+        echo "REPO_SOURCE_DIR = $REPO_SOURCE_DIR"
+        echo "REPO_LOCAL_DIR = $REPO_LOCAL_DIR"
+
+        # Sparse Clone Repository
+        mkdir -p $REPO_LOCAL_DIR/$REPO_OWNER
+        echo "cd $REPO_LOCAL_DIR/$REPO_OWNER" >> $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        echo "git clone --no-checkout https://$REPO_PAT@github.com/$REPO_OWNER/$REPO_NAME" >> $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        echo "cd $REPO_NAME" >> $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        echo "git sparse-checkout set \"$REPO_SOURCE_DIR\"" >> $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        echo 'git reset --hard HEAD' >> $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        bash $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        #rm -f $REPO_LOCAL_DIR/$REPO_OWNER.$REPO_NAME.temp_clone.sh
+        #-----------------------------------------------------------------
+
+        echo "completion_time=$(date)" >> $GITHUB_OUTPUT
+        echo "Sparse cloning completed at $(date)"
+        echo "--- DONE: Sparse cloinging repo ----------------------------"
